@@ -1,0 +1,5 @@
+package com.inn.restaurant.serviceImpl;
+
+public class UserServiceImpl {
+
+}

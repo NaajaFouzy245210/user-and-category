@@ -1,0 +1,9 @@
+package com.inn.restaurant.dao;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.inn.restaurant.pojo.User;
+
+public interface UserDao extends JpaRepository<User, Integer> {
+
+}

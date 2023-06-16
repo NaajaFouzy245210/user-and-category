@@ -1,0 +1,5 @@
+package com.inn.restaurant.JWT;
+
+public class JwtFilter {
+
+}

@@ -1,0 +1,123 @@
+package com.inn.restaurant.serviceImpl;
+
+import java.util.Map;
+import java.util.Objects;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import com.inn.restaurant.JWT.CustomerUserDetailsService;
+import com.inn.restaurant.JWT.JwtFilter;
+import com.inn.restaurant.JWT.JwtUtil;
+import com.inn.restaurant.constents.RestaurantConstents;
+import com.inn.restaurant.dao.UserDao;
+import com.inn.restaurant.pojo.User;
+import com.inn.restaurant.service.UserService;
+import com.inn.restaurant.utils.RestaurantUtils;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class UserServiceImpl implements UserService {
+
+	@Autowired
+	UserDao userDao;
+	
+	@Autowired
+	AuthenticationManager authenticationManager;
+	
+	@Autowired
+	JwtUtil jwtUtil;
+	
+	@Autowired
+	CustomerUserDetailsService customerUserDetailsService;
+	
+	@Override
+	public ResponseEntity<String> signup(Map<String, String> requestMap) {
+		
+		log.info("inside signup{}",requestMap);
+		try {
+			
+		if(validateSignUpMap(requestMap)) {
+			
+			User user = userDao.findByEmailId(requestMap.get("email"));
+			if(Objects.isNull(user)) {
+				userDao.save(getUserFromMap(requestMap));
+				return RestaurantUtils.getResponseEntity("successfully registered", HttpStatus.OK);
+				
+				
+			}
+			else {
+				return RestaurantUtils.getResponseEntity("email already exits", HttpStatus.BAD_REQUEST);
+			}
+			
+		}
+		else 
+		{
+			return RestaurantUtils.getResponseEntity(RestaurantConstents.INVALID_DATA,HttpStatus.BAD_REQUEST);
+		
+		}}
+		catch (Exception e) {
+			
+			e.printStackTrace();
+			// TODO: handle exception
+		}
+		
+		return RestaurantUtils.getResponseEntity(RestaurantUtils.SOMETHING_WENT_WRONG,HttpStatus.BAD_REQUEST);
+		
+		
+		
+	}
+	private boolean validateSignUpMap (Map<String, String> requestMap) {
+		if (requestMap.containsKey("name") && requestMap.containsKey("contactNumber") && requestMap.containsKey("email") &&
+		requestMap.containsKey("password")) {
+			return true;
+		}
+		return false;
+		
+	}
+	private User getUserFromMap (Map<String,String> requestMap) {
+		User user = new User();
+		user.setName(requestMap.get("name"));
+		user.setContactnumber(requestMap.get("contactNumber"));
+		user.setEmail(requestMap.get("email"));
+		user.setPassword(requestMap.get("password"));
+		user.setStatus("false");
+		user.setRole("user");
+		return user;
+		
+	}
+	@Override
+	public ResponseEntity<String> login(Map<String, String> requestMap) {
+		
+		
+		log.info("inside login");
+		try {
+			Authentication auth=authenticationManager
+					.authenticate(new UsernamePasswordAuthenticationToken(requestMap.get("email"),requestMap.get("password"))
+			);
+			if(auth.isAuthenticated())
+			{
+				if(CustomerUserDetailsService.getUserDetails().getStatus().equalsIgnoreCase("true"))
+				{
+					return new ResponseEntity<String>("{\"token\":\""+jwtUtil
+							.generateToken(customerUserDetailsService.getUserDetails().getEmail(),customerUserDetailsService
+							.getUserDetails().getRole())+"\"}",HttpStatus.OK);
+				}
+				else {
+					return new ResponseEntity<String>("{\"message\":\""+"wait for admin approval"+"\"}",HttpStatus.BAD_REQUEST);
+				}
+			}
+			
+		} catch (Exception e) {
+			log.error("{}",e);
+		}
+	}
+
+}

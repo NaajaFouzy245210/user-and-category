@@ -1,0 +1,5 @@
+package com.inn.restaurant.wrapper;
+
+public class UserWrapper {
+
+}
